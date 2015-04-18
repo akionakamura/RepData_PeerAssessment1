@@ -1,33 +1,14 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-author: Thiago Akio Nakamura
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
+Thiago Akio Nakamura  
 
-```{r cleanUpAndStart, echo = F}
-rm(list = ls())
 
-if(!file.exists("activity.zip")){
-    fileURL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
-    download.file(fileURL, "activity.zip", method = "curl")
-    unzip("activity.zip")
-}
-if(file.exists("activity.zip")){
-    unzip("activity.zip")
-}
-
-# Load library
-library(ggplot2)
-library(reshape2)
-```
 
 
 ## Loading and preprocessing the data
 As the data is in a `comma separated value` file, it can be directly read via the `read.csv` command. For now, no further pre-processing is needed.
 
-```{r loadData, echo=TRUE}
+
+```r
 data <- read.csv("activity.csv")
 ```
 
@@ -35,26 +16,40 @@ data <- read.csv("activity.csv")
 ## What is mean total number of steps taken per day?
 Through the command `tapply` we can sum the steps of each interval within a day, to obtain the total steps per day and visualize to result through a histogram.
 
-```{r plotHistogram, message=FALSE}
+
+```r
 total.steps.day <- tapply(data$steps, data$date, sum, na.rm = TRUE)
 qplot(total.steps.day, geom = "histogram",
       xlab = "Steps", ylab = "Day Count", 
       main = "Total Steps per Day Histogram")
 ```
 
+![](PA1_template_files/figure-html/plotHistogram-1.png) 
+
 The mean and median total steps per day are:
-```{r meanStepsPerDay, message=FALSE}
 
+```r
 mean(total.steps.day)
-median(total.steps.day)
+```
 
+```
+## [1] 9354.23
+```
+
+```r
+median(total.steps.day)
+```
+
+```
+## [1] 10395
 ```
 
 
 ## What is the average daily activity pattern?
 Ainda using the `tapply` command, we can compute the average activity within each interval for all days in the data. The result can ve seen in the following time series plot.
 
-```{r dailyActivity}
+
+```r
 daily.activity <- tapply(data$steps, as.factor(data$interval), mean, na.rm = TRUE)
 df <- data.frame(Interval = as.numeric(names(daily.activity)), Activity = daily.activity)
 ggplot(data=df, 
@@ -62,16 +57,24 @@ ggplot(data=df,
     geom_line() + labs(title = "Average Daily Activity Pattern")
 ```
 
+![](PA1_template_files/figure-html/dailyActivity-1.png) 
+
 
 ## Imputing missing values
 The amount of missing rows is:
-```{r missingRows}
+
+```r
 dim(data)[1] - sum(complete.cases(data))
+```
+
+```
+## [1] 2304
 ```
 
 To fill up the missing value, we will use the data in `daily.activity` we the average number of steps for the given missing interval.
 
-```{r fillUp}
+
+```r
 na.idxs <- is.na(data$steps)         # Find missing values
 na.interval <- data$interval[na.idxs]     # Find associated interval
 fill.values <- daily.activity[c(as.character(na.interval))]  # Find the average for the given interval
@@ -82,18 +85,36 @@ new.data$steps[na.idxs] <- fill.values   # Fill NAs values
 
 The new mean and median can be computed as follows, along with the new histogram for the daily activity.
 
-```{r newData, message=FALSE}
+
+```r
 new.total.steps.day <- tapply(new.data$steps, data$date, sum, na.rm = TRUE)
 mean(new.total.steps.day)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(new.total.steps.day)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 qplot(new.total.steps.day, geom = "histogram",
       xlab = "Steps", ylab = "Day Count", 
       main = "Total Steps per Day Histogram")
 ```
 
+![](PA1_template_files/figure-html/newData-1.png) 
+
 ## Are there differences in activity patterns between weekdays and weekends?
 To check if there are differences in the actitivy pattern between weekdays and weekends, we should separate the data with a new factor.
-```{r weekdaysFactor}
+
+```r
 new.factor <- as.POSIXlt(as.character(data$date), format= "%Y-%m-%d") # Change to POSIXlt class
 new.factor <- weekdays(new.factor) # Obtain the weekday
 weekend.idxs <- which(new.factor == "Saturday" | new.factor == "Sunday") # Find weekends day
@@ -104,7 +125,8 @@ new.data$weekday <- as.factor(as.factor(new.factor)) # Create new factor
 
 To check the difference in the activity patterns between weekdays and weekends, the following plane plot has been drawn.
 
-```{r planePlot}
+
+```r
 factor.list <- as.list(new.data[, c("interval", "weekday")]) # Create list with two factors
 # Compute the mean for each combination of interval and weekday
 separate.daily.activity <- data.frame(tapply(new.data$steps, factor.list, mean)) 
@@ -116,3 +138,5 @@ qplot(Interval, Steps,
       facets = variable ~ .,
       geom = "line")
 ```
+
+![](PA1_template_files/figure-html/planePlot-1.png) 
